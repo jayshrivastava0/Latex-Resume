@@ -45,10 +45,16 @@ jobs:
 
                     python3 replace.py
 
-                - name: Commit and Push Changes
+                    - name: Commit and Push Changes
+                    env:
+                      PAT: ${{ secrets.GH_PAT }}
                     run: |
-                    git config --global user.name 'github-actions'
-                    git config --global user.email 'action@github.com'
-                    git add src/${{ github.event.inputs.section }}.tex
-                    git commit -m "🔄 Auto-update ${{ github.event.inputs.section }} section"
-                    git push
+                      git config --global user.name 'resume-updater-bot'
+                      git config --global user.email 'resume-bot@example.com'
+                  
+                      git remote set-url origin https://x-access-token:${PAT}@github.com/jayshrivastava0/Latex-Resume.git
+                  
+                      git add src/${{ github.event.inputs.section }}.tex
+                      git commit -m "🔄 Auto-update ${{ github.event.inputs.section }} section"
+                      git push origin main
+                  
