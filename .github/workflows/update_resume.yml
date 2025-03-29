@@ -1,119 +1,117 @@
-# --- Ensure this file uses spaces for indentation ---
-    name: Update Resume Section
+name: Update Resume Section
 
-    on:
-      workflow_dispatch:
-        inputs:
-          section:
-            description: "Section to update (example: experience)"
-            required: true
-            type: string
-          new_content:
-            description: "New LaTeX resumeItem lines to insert (use Shift+Enter for newlines)"
-            required: true
-            type: string
-    
-    # Job definition (e.g., 0 or 2 spaces indent)
-    jobs:
-      # Job name (e.g., 2 or 4 spaces indent)
-      update-resume:
-        # Job settings (e.g., 4 or 6 spaces indent)
-        runs-on: ubuntu-latest
-        permissions:
-          contents: write
-    
-        # Steps list (e.g., 4 or 6 spaces indent)
-        steps:
-          # --- Step 1 --- (e.g., 6 or 8 spaces indent for the '-')
-          - name: Checkout Repo
-            # Step contents (e.g., 8 or 10 spaces indent)
-            uses: actions/checkout@v4
-            with:
-              token: ${{ secrets.GH_PAT }}
-    
-          # --- Step 2 --- (e.g., 6 or 8 spaces indent for the '-', SAME as Step 1)
-          - name: Replace Section Content
-            # Step contents (e.g., 8 or 10 spaces indent)
-            id: replace
-            run: |
-              # --- Shell commands indented further (e.g., 10 or 12 spaces) ---
-              echo "Updating section ${{ github.event.inputs.section }}"
-              FILE="src/${{ github.event.inputs.section }}.tex"
-              TEMP_SCRIPT="replace_temp.py"
-    
-              if [ ! -f "$FILE" ]; then
-                echo "Error: File $FILE not found!"
-                exit 1
-              fi
-    
-              cat <<EOF > "$TEMP_SCRIPT"
-                import re
-                import sys
+on:
+  workflow_dispatch:
+    inputs:
+      section:
+        description: "Section to update (example: experience)"
+        required: true
+        type: string
+      new_content:
+        description: "New LaTeX resumeItem lines to insert (use Shift+Enter for newlines)"
+        required: true
+        type: string
 
-                file_path = "$FILE"
-                new_content = '''${{ github.event.inputs.new_content }}'''
+jobs:
+  update-resume:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
-                try:
-                    with open(file_path, "r", encoding="utf-8") as f:
-                        content = f.read()
-                except FileNotFoundError:
-                    print(f"Error: File not found at {file_path}")
-                    sys.exit(1)
+    steps:
+      # Step 1: Checkout
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
 
-                pattern = r"(\\resumeItemListStart\n)(.*?)(\\resumeItemListEnd)"
-                match = re.search(pattern, content, flags=re.DOTALL)
+      # Step 2: Replace Content
+      - name: Replace Section Content
+        id: replace
+        run: |
+          echo "Updating section ${{ github.event.inputs.section }}"
+          FILE="src/${{ github.event.inputs.section }}.tex"
+          TEMP_SCRIPT="replace_temp.py"
 
-                if match:
-                    updated_content = content[:match.start(2)] + new_content + content[match.end(2):]
-                    if updated_content != content:
-                        try:
-                            with open(file_path, "w", encoding="utf-8") as f:
-                                f.write(updated_content)
-                            print(f"Update applied successfully to {file_path}.")
-                        except IOError as e:
-                            print(f"Error writing to file {file_path}: {e}")
-                            sys.exit(1)
-                    else:
-                        print("Content already matches. No update needed.")
-                else:
-                    print(f"Warning: Pattern '\\\\resumeItemListStart\\n...\\\\resumeItemListEnd' not found in {file_path}. No changes made.")
-                EOF
-              echo "Running Python script..."
-              python3 "$TEMP_SCRIPT"
-              exit_code=$?
-    
-              echo "Removing temporary script..."
-              rm "$TEMP_SCRIPT"
-    
-              if [ $exit_code -ne 0 ]; then
-                echo "Python script failed with exit code $exit_code"
-                exit $exit_code
-              fi
-              echo "Python script completed successfully."
-    
-          # --- Step 3 --- (e.g., 6 or 8 spaces indent for the '-', SAME as Step 1 and 2)
-          - name: Commit and Push Changes
-            # Step contents (e.g., 8 or 10 spaces indent)
-            if: steps.replace.outcome == 'success'
-            env:
-              GIT_USER_NAME: "github-actions[bot]"
-              GIT_USER_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com"
-            run: |
-              # --- Shell commands indented further (e.g., 10 or 12 spaces) ---
-              echo "Checking for changes in src/${{ github.event.inputs.section }}.tex"
-              git add src/${{ github.event.inputs.section }}.tex
-    
-              if git diff --staged --quiet src/${{ github.event.inputs.section }}.tex; then
-                 echo "No changes detected in src/${{ github.event.inputs.section }}.tex to commit. Skipping commit and push."
-                 exit 0
-              fi
-    
-              echo "Configuring Git user..."
-              git config --global user.name "${GIT_USER_NAME}"
-              git config --global user.email "${GIT_USER_EMAIL}"
-    
-              echo "Committing changes..."
-              git commit -m "Auto-update ${{ github.event.inputs.section }} section via workflow"
-    
-              echo "Pushing changes..."
-              git push origin HEAD:${{ github.ref_name }}
+          if [ ! -f "$FILE" ]; then
+            echo "Error: File $FILE not found!"
+            exit 1
+          fi
+
+          # Create Python script using standard YAML syntax instead of HEREDOC
+          echo "import re" > "$TEMP_SCRIPT"
+          echo "import sys" >> "$TEMP_SCRIPT"
+          echo "" >> "$TEMP_SCRIPT"
+          echo "file_path = \"$FILE\"" >> "$TEMP_SCRIPT"
+          echo "# Use triple single quotes for new_content to avoid issues with potential double quotes inside" >> "$TEMP_SCRIPT"
+          echo "new_content = '''${{ github.event.inputs.new_content }}'''" >> "$TEMP_SCRIPT"
+          echo "" >> "$TEMP_SCRIPT"
+          echo "try:" >> "$TEMP_SCRIPT"
+          echo "    with open(file_path, \"r\", encoding=\"utf-8\") as f:" >> "$TEMP_SCRIPT"
+          echo "        content = f.read()" >> "$TEMP_SCRIPT"
+          echo "except FileNotFoundError:" >> "$TEMP_SCRIPT"
+          echo "    print(f\"Error: File not found at {file_path}\")" >> "$TEMP_SCRIPT"
+          echo "    sys.exit(1)" >> "$TEMP_SCRIPT"
+          echo "" >> "$TEMP_SCRIPT"
+          echo "# Corrected Regex: Match literal \command followed by newline" >> "$TEMP_SCRIPT"
+          echo "# Use re.DOTALL so '.' matches newline characters within the section" >> "$TEMP_SCRIPT"
+          echo "pattern = r\"(\\\\resumeItemListStart\\n)(.*?)(\\\\resumeItemListEnd)\"" >> "$TEMP_SCRIPT"
+          echo "match = re.search(pattern, content, flags=re.DOTALL)" >> "$TEMP_SCRIPT"
+          echo "" >> "$TEMP_SCRIPT"
+          echo "if match:" >> "$TEMP_SCRIPT"
+          echo "    updated_content = content[:match.start(2)] + new_content + content[match.end(2):]" >> "$TEMP_SCRIPT"
+          echo "    if updated_content != content:" >> "$TEMP_SCRIPT"
+          echo "        try:" >> "$TEMP_SCRIPT"
+          echo "            with open(file_path, \"w\", encoding=\"utf-8\") as f:" >> "$TEMP_SCRIPT"
+          echo "                f.write(updated_content)" >> "$TEMP_SCRIPT"
+          echo "            print(f\"Update applied successfully to {file_path}.\")" >> "$TEMP_SCRIPT"
+          echo "        except IOError as e:" >> "$TEMP_SCRIPT"
+          echo "            print(f\"Error writing to file {file_path}: {e}\")" >> "$TEMP_SCRIPT"
+          echo "            sys.exit(1)" >> "$TEMP_SCRIPT"
+          echo "    else:" >> "$TEMP_SCRIPT"
+          echo "        print(\"Content already matches. No update needed.\")" >> "$TEMP_SCRIPT"
+          echo "else:" >> "$TEMP_SCRIPT"
+          echo "    print(f\"Warning: Pattern '\\\\\\\\resumeItemListStart\\\\n...\\\\\\\\resumeItemListEnd' not found in {file_path}. No changes made.\")" >> "$TEMP_SCRIPT"
+          echo "    # Optionally exit if pattern must be found:" >> "$TEMP_SCRIPT"
+          echo "    # sys.exit(1)" >> "$TEMP_SCRIPT"
+          
+          echo "Running Python script..."
+          python3 "$TEMP_SCRIPT"
+          exit_code=$? # Capture Python script exit code
+
+          echo "Removing temporary script..."
+          rm "$TEMP_SCRIPT"
+
+          # Fail workflow step if Python script exited with an error
+          if [ $exit_code -ne 0 ]; then
+            echo "Python script failed with exit code $exit_code"
+            exit $exit_code
+          fi
+          echo "Python script completed successfully."
+
+      # Step 3: Commit and Push
+      - name: Commit and Push Changes
+        if: steps.replace.outcome == 'success' # Check previous step outcome
+        env:
+          GIT_USER_NAME: "github-actions[bot]"
+          GIT_USER_EMAIL: "41898282+github-actions[bot]@users.noreply.github.com"
+        run: |
+          echo "Checking for changes in src/${{ github.event.inputs.section }}.tex"
+          # Add the specific file first
+          git add src/${{ github.event.inputs.section }}.tex
+
+          # Check if git add actually staged anything for this specific file
+          if git diff --staged --quiet src/${{ github.event.inputs.section }}.tex; then
+             echo "No changes detected in src/${{ github.event.inputs.section }}.tex to commit. Skipping commit and push."
+             exit 0 # Exit successfully, nothing to do
+          fi
+
+          echo "Configuring Git user..."
+          git config --global user.name "${GIT_USER_NAME}"
+          git config --global user.email "${GIT_USER_EMAIL}"
+
+          echo "Committing changes..."
+          git commit -m "Auto-update ${{ github.event.inputs.section }} section via workflow"
+
+          echo "Pushing changes..."
+          git push origin HEAD:${{ github.ref_name }}
