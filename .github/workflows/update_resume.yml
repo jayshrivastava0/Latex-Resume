@@ -4,10 +4,10 @@ on:
   workflow_dispatch:
     inputs:
       section:
-        description: 'Section to update (example: experience)'
+        description: "Section to update (example: experience)"
         required: true
       new_content:
-        description: 'New LaTeX resumeItem lines to insert'
+        description: "New LaTeX resumeItem lines to insert"
         required: true
 
 jobs:
@@ -21,37 +21,38 @@ jobs:
         run: |
           FILE="src/${{ github.event.inputs.section }}.tex"
 
-          echo 'import re
+          cat <<EOF > replace.py
+            import re
 
-file_path = "'"$FILE"'"
-new_content = """${{ github.event.inputs.new_content }}"""
+            file_path = "$FILE"
+            new_content = """${{ github.event.inputs.new_content }}"""
 
-with open(file_path, "r") as f:
-    content = f.read()
+            with open(file_path, "r") as f:
+                content = f.read()
 
-pattern = r"(\\\\resumeItemListStart\\n)(.*?)(\\\\resumeItemListEnd)"
-match = re.search(pattern, content, flags=re.DOTALL)
+            pattern = r"(\\\\resumeItemListStart\\n)(.*?)(\\\\resumeItemListEnd)"
+            match = re.search(pattern, content, flags=re.DOTALL)
 
-if match:
-    updated = content[:match.start(2)] + new_content + content[match.end(2):]
-    with open(file_path, "w") as f:
-        f.write(updated)
-    print("✅ Update applied.")
-else:
-    print("⚠️ No matching block found.")
-' > replace.py
+            if match:
+                updated = content[:match.start(2)] + new_content + content[match.end(2):]
+                with open(file_path, "w") as f:
+                    f.write(updated)
+                print("Update applied.")
+            else:
+                print("No matching block found.")
+            EOF
 
-          python3 replace.py
+                    python3 replace.py
 
-      - name: Commit and Push Changes
-        env:
-          PAT: ${{ secrets.GH_PAT }}
-        run: |
-          git config --global user.name 'resume-updater-bot'
-          git config --global user.email 'resume-bot@example.com'
+                - name: Commit and Push Changes
+                    env:
+                    PAT: ${{ secrets.GH_PAT }}
+                    run: |
+                    git config --global user.name "resume-updater-bot"
+                    git config --global user.email "resume-bot@example.com"
 
-          git remote set-url origin https://x-access-token:${PAT}@github.com/jayshrivastava0/Latex-Resume.git
+                    git remote set-url origin https://x-access-token:${PAT}@github.com/jayshrivastava0/Latex-Resume.git
 
-          git add src/${{ github.event.inputs.section }}.tex
-          git commit -m "🔄 Auto-update ${{ github.event.inputs.section }} section"
-          git push origin main
+                    git add src/${{ github.event.inputs.section }}.tex
+                    git commit -m "Auto-update ${{ github.event.inputs.section }} section"
+                    git push origin main
