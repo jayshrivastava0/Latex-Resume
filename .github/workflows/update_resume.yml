@@ -1,0 +1,48 @@
+name: Update Resume Section
+
+on:
+  workflow_dispatch: # allows manual trigger from GitHub UI
+    inputs:
+      section:
+        description: 'Section to update (example: experience)'
+        required: true
+      new_content:
+        description: 'New LaTeX resumeItem lines to insert'
+        required: true
+
+jobs:
+  update-resume:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Repo
+      uses: actions/checkout@v3
+
+    - name: Replace Section Content
+      run: |
+        echo "Updating section ${{ github.event.inputs.section }}"
+        FILE="src/${{ github.event.inputs.section }}.tex"
+
+        python3 <<EOF
+import re
+
+file_path = "$FILE"
+new_content = """${{ github.event.inputs.new_content }}"""
+
+with open(file_path, "r") as f:
+    content = f.read()
+
+# Replace everything between \resumeItemListStart and \resumeItemListEnd (first match only)
+pattern = r"(\\\\resumeItemListStart\\n)(.*?)(\\\\resumeItemListEnd)"
+updated = re.sub(pattern, r"\1" + new_content + r"\3", content, flags=re.DOTALL)
+
+with open(file_path, "w") as f:
+    f.write(updated)
+EOF
+
+    - name: Commit and Push Changes
+      run: |
+        git config --global user.name 'github-actions'
+        git config --global user.email 'action@github.com'
+        git add src/${{ github.event.inputs.section }}.tex
+        git commit -m "🔄 Auto-update ${{ github.event.inputs.section }} section"
+        git push
