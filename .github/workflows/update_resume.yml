@@ -23,21 +23,21 @@ jobs:
         FILE="src/${{ github.event.inputs.section }}.tex"
 
         python3 <<EOF
-import re
+        import re
 
-file_path = "$FILE"
-new_content = """${{ github.event.inputs.new_content }}"""
+        file_path = "$FILE"
+        new_content = """${{ github.event.inputs.new_content }}"""
 
-with open(file_path, "r") as f:
-    content = f.read()
+        with open(file_path, "r") as f:
+            content = f.read()
 
-# Replace everything between \resumeItemListStart and \resumeItemListEnd (first match only)
-pattern = r"(\\\\resumeItemListStart\\n)(.*?)(\\\\resumeItemListEnd)"
-updated = re.sub(pattern, r"\1" + new_content + r"\3", content, flags=re.DOTALL)
+        # Replace everything between \resumeItemListStart and \resumeItemListEnd (first match only)
+        pattern = r"(\\\\resumeItemListStart\\n)(.*?)(\\\\resumeItemListEnd)"
+        updated = re.sub(pattern, r"\1" + new_content + r"\3", content, flags=re.DOTALL)
 
-with open(file_path, "w") as f:
-    f.write(updated)
-EOF
+        with open(file_path, "w") as f:
+            f.write(updated)
+        EOF
 
     - name: Commit and Push Changes
       run: |
